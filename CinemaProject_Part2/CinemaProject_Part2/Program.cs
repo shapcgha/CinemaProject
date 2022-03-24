@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using System.IO;
 
 namespace CinemaProject_Part2
 {
@@ -13,10 +14,12 @@ namespace CinemaProject_Part2
         static List<Film> films;
         static List<Hall> allHalls;
         static List<FilmSession> allFilmSessions;
+        static StringBuilder file;
+        static StreamReader sc;
 
 
 
-        static void Main(string[] args)
+        static void Main()
         {
             Initializing();
             Console.ReadKey();
@@ -25,6 +28,16 @@ namespace CinemaProject_Part2
 
         static void Initializing()
         {
+            if (File.Exists("cinema.txt"))
+            {
+                sc = new StreamReader("cinema.txt");
+            }
+            else
+            {
+                sc = new StreamReader(Console.OpenStandardInput());
+            }
+           
+            file = new StringBuilder();
             InitializingFilms();
             SettingFilmsHalls();
             GettingHallsAndSessionsLists();
@@ -36,11 +49,20 @@ namespace CinemaProject_Part2
         static void InitializingFilms()
         {
             Console.WriteLine("Введите количество фильмов:");
-
-            var filmsNumber = int.Parse(Console.ReadLine());
-
+            uint filmsNumber = 0;
+            while (true)
+            {
+                try
+                {
+                    filmsNumber = uint.Parse(sc.ReadLine());
+                    break;
+                }
+                catch
+                {
+                    Console.WriteLine("Требуется натуральное число");
+                }
+            }
             Console.WriteLine();
-
 
             films = new List<Film>();
 
@@ -48,7 +70,8 @@ namespace CinemaProject_Part2
 
             for (int i = 0; i < filmsNumber; i++)
             {
-                films.Add(new Film(Console.ReadLine()));
+                var filmName = sc.ReadLine();
+                films.Add(new Film(filmName));
             }
 
             Console.WriteLine();
@@ -58,7 +81,14 @@ namespace CinemaProject_Part2
 
             for (int i = 0; i < filmsNumber; i++)
             {
-                films[i].Rating = Console.ReadLine();
+                while (true)
+                {
+                    films[i].Rating = sc.ReadLine();
+                    if (films[i].Rating.Equals("0+") || films[i].Rating.Equals("6+") ||
+                        films[i].Rating.Equals("12+") || films[i].Rating.Equals("18+") || films[i].Rating.Equals("16+")) break;
+                    else Console.WriteLine("Введите корректный возрастной рейтинг(0+, 6+, 12+, 16+, 18+)");
+                }
+                file.AppendLine(films[i].Rating);
             }
 
             Console.WriteLine();
@@ -83,11 +113,21 @@ namespace CinemaProject_Part2
         static List<Hall> InitializingHalls(string filmName = "", bool initial = true)
         {
             Console.WriteLine("Введите количество залов для этого фильма:");
-
-            var hallsNumber = int.Parse(Console.ReadLine());
+            uint hallsNumber;
+            while (true)
+            {
+                try
+                {
+                    hallsNumber = uint.Parse(sc.ReadLine());
+                    break;
+                }
+                catch
+                {
+                    Console.WriteLine("Требуется натуральное число");
+                }
+            }
 
             Console.WriteLine();
-
 
             var halls = new List<Hall>();
 
@@ -103,7 +143,8 @@ namespace CinemaProject_Part2
 
             for (int i = 0; i < hallsNumber; i++)
             {
-                halls.Add(new Hall(Console.ReadLine()));
+                var hallName = sc.ReadLine();
+                halls.Add(new Hall(hallName));
             }
 
             Console.WriteLine();
@@ -143,12 +184,21 @@ namespace CinemaProject_Part2
         {
             Console.WriteLine();
             Console.WriteLine($"Введите через пробел размер зала {hallName}:");
+            while (true)
+            {
+                try
+                {
+                    var sizes = sc.ReadLine().Split();
 
-            var sizes = Console.ReadLine().Split();
-
-            N = int.Parse(sizes[0]);
-            M = int.Parse(sizes[1]);
-
+                    N = (int) uint.Parse(sizes[0]);
+                    M = (int) uint.Parse(sizes[1]);
+                    break;
+                }
+                catch
+                {
+                    Console.WriteLine("Введите 2 натуральных числа");
+                }
+            }
             Console.WriteLine();
         }
 
@@ -161,10 +211,21 @@ namespace CinemaProject_Part2
 
             for (int i = 0; i < N; i++)
             {
-                prices[i] = Console.ReadLine()
-                    .Split()
-                    .Select(int.Parse)
-                    .ToArray();
+                while (true)
+                {
+                    try
+                    {
+                        prices[i] = sc.ReadLine()
+                            .Split()
+                            .Select(int.Parse)
+                            .ToArray();
+                        break;
+                    }
+                    catch
+                    {
+                        Console.WriteLine("Вводите натуральные числа разделенные пробелами");
+                    }
+                }
             }
 
             Console.WriteLine();
@@ -176,8 +237,19 @@ namespace CinemaProject_Part2
         static List<FilmSession> SettingHallsSessions(Hall hall)
         {
             Console.WriteLine("Введите количество временных сеансов/слотов для этого зала:");
-
-            var sessionsNumber = int.Parse(Console.ReadLine());
+            var sessionsNumber = 0;
+            while (true)
+            {
+                try
+                {
+                    sessionsNumber = (int) uint.Parse(sc.ReadLine());
+                    break;
+                }
+                catch
+                {
+                    Console.WriteLine("Вводите натуральное число");
+                }
+            }
 
             Console.WriteLine();
 
@@ -188,7 +260,20 @@ namespace CinemaProject_Part2
 
             for (int i = 0; i < sessionsNumber; i++)
             {
-                sessions.Add(new FilmSession(Console.ReadLine(), hall));
+                while (true)
+                {
+                    try
+                    {
+                        var data = sc.ReadLine();
+                        DateTime.Parse(data);
+                        sessions.Add(new FilmSession(data, hall));
+                        break;
+                    }
+                    catch
+                    {
+                        Console.WriteLine("ВВедите коректное дата и время сеанса");
+                    }
+                }
             }
 
             Console.WriteLine();
@@ -255,7 +340,7 @@ namespace CinemaProject_Part2
 
                 if (result == false)
                 {
-                    UserInterface();
+                    UserInterface.start(films, allFilmSessions, allHalls);
                 }
                 else if (result == true)
                 {
@@ -295,214 +380,12 @@ namespace CinemaProject_Part2
             }
         }
 
-
-
-        static void UserInterface()
-        {
-            Console.Clear();
-            Console.WriteLine("Вы вошли в систему как клиент!");
-            Console.WriteLine();
-
-            var balance = GetUserBalance();
-            var name = GetUserName();
-
-            var boughtTickets = new List<Place>();
-
-            while (true)
-            {
-                Console.Clear();
-
-                Console.WriteLine("Что вы хотите сделать?");
-                Console.WriteLine("Нажмите 1 для просмотра информации о фильмах в кинотеатре");
-                Console.WriteLine("Нажмите 2 для покупки билетов");
-                Console.WriteLine("Нажмите 3 для просмотра купленных вами билетов");
-                Console.WriteLine("Нажмите 4 для того, чтобы пополнить баланс");
-                Console.WriteLine("Нажмите любую другую кнопку для завершения пользовательского сеанса");
-
-                var key = Console.ReadKey().Key;
-
-                Console.Clear();
-
-                if (key == ConsoleKey.D1)
-                {
-                    ShowingFilmsInformation();
-                }
-
-                else if (key == ConsoleKey.D2)
-                {
-                    var locallyBoughtTickets = BuyingTickets(balance, name, out balance);
-
-                    if (locallyBoughtTickets != null)
-                    {
-                        boughtTickets.AddRange(locallyBoughtTickets);
-
-                        boughtTickets = boughtTickets
-                            .OrderBy(tick => tick.Session.Date)
-                            .ThenBy(tick => tick.Row)
-                            .ThenBy(tick => tick.Column)
-                            .ToList();
-                    }
-                }
-
-                else if (key == ConsoleKey.D3)
-                {
-                    ShowingBoughtTickets(boughtTickets);
-                }
-
-                else if (key == ConsoleKey.D4)
-                {
-                    balance = IncreasingBalance(balance);
-                }
-
-                else
-                {
-                    break;
-                }
-            }
-        }
-
-
-        static int GetUserBalance()
-        {
-            Console.WriteLine("Укажите текущий баланс счета:");
-
-            var answer = int.Parse(Console.ReadLine());
-
-            Console.WriteLine();
-
-            return answer;
-        }
-
-        static string GetUserName()
-        {
-            Console.WriteLine("Укажите ваше ФИО для корректной работы с системой:");
-
-            var answer = Console.ReadLine();
-
-            Console.WriteLine();
-
-            return answer;
-        }
-
-
-
-        static void ShowingFilmsInformation()
-        {
-            Console.WriteLine("Репертуар:");
-            Console.WriteLine();
-
-            foreach (var film in films)
-            {
-                film.PrintFilmInformation();
-            }
-
-            PressAnyKey();
-        }
-
         static void PressAnyKey()
         {
             Console.WriteLine("Нажмите любую кнопку для продолжения");
 
             Console.ReadKey();
         }
-
-
-
-        static List<Place> BuyingTickets(int balance, string name, out int newBalance)
-        {
-            newBalance = balance;
-
-            while (true)
-            {
-                var filteredSessions = FilteredSessionsByUser();
-
-                if (filteredSessions.Count == 0)
-                {
-                    if (RepeatFilters()) { continue; }
-                    else { return null; }
-                }
-
-                else
-                {
-                    Console.Clear();
-
-                    Console.WriteLine("Список сеансов для покупки:");
-                    Console.WriteLine();
-                    Console.WriteLine();
-
-                    ShowingSessions(filteredSessions);
-
-                    bool wasChosen = ChoosingSession(filteredSessions, out FilmSession chosenSession);
-
-                    if (!wasChosen) { return null; }
-
-
-                    Console.Clear();
-
-                    chosenSession.PrintSessionFullInformation();
-
-                    bool wasBought = BuyingTicketsOfChosenSession(chosenSession, balance, name, out List<Place> boughtPlaces, out newBalance);
-
-                    if (!wasBought) { return null; }
-
-                    return boughtPlaces;
-                }
-            }
-        }
-
-
-        static List<FilmSession> FilteredSessionsByUser()
-        {
-            Console.WriteLine("Ниже зададим фильтры для отображения сеансов:");
-            Console.WriteLine();
-
-            List<Func<FilmSession, bool>> filters = new List<Func<FilmSession, bool>>();
-
-
-            FilteringByFilm(filters,
-                "1. Фильтр по фильмам",
-                "Если вы хотите отобразить сеансы одного конкретного фильма, напишите его название",
-                "Для отображения сеансов всех фильмов нажмите Enter");
-
-            FilteringByHall(filters,
-                "2. Фильтр по залам",
-                "Если вы хотите отобразить сеансы в одном конкретном зале, напишите его название (напишите название полностью, с техническими символами, если они есть)",
-                "Для отображения сеансов по всем залам нажмите Enter");
-
-            FilteringBySelectedDate(filters,
-                "3. Фильтр по дате",
-                "Если вы хотите отобразить сеансы на конкретную дату, напишите эту дату в формате ДД.ММ.ГГГГ",
-                "Для отображения сеансов по всем датам нажмите Enter");
-
-            FilteringByCurrentDate(filters);
-            FilteringByAllBoughtPlaces(filters);
-
-
-            var filteredSessions = allFilmSessions.Where(filters[0]);
-
-            for (int i = 1; i < filters.Count; i++)
-            {
-                filteredSessions = filteredSessions.Where(filters[i]);
-            }
-
-            return filteredSessions.ToList();
-        }        
-
-
-
-        static bool RepeatFilters()
-        {
-            Console.WriteLine("К сожалению, с учетом указанных вами фильтров нет доступных сеансов");
-            Console.WriteLine("Чтобы повторить ввод фильтров нажмите 1");
-            Console.WriteLine("Чтобы вернуться назад, нажмите любую другую кнопку");
-
-            var key = Console.ReadKey().Key;
-
-            Console.Clear();
-
-            return key == ConsoleKey.D1;
-        }
-
 
         static void ShowingSessions(List<FilmSession> sessions = null, bool allSessions = false, Film selectedFilm = null)
         {
@@ -525,7 +408,7 @@ namespace CinemaProject_Part2
                     .Distinct()
                     .ToList();
             }
-            
+
 
             foreach (var film in filteredFilms)
             {
@@ -575,261 +458,6 @@ namespace CinemaProject_Part2
                 Console.WriteLine();
             }
         }
-
-
-
-        static bool ChoosingSession(List<FilmSession> sessions, out FilmSession chosenSession)
-        {
-            Console.WriteLine("Напишите номер сеанса, на который вы бы хотели посмотреть билеты.");
-            Console.WriteLine("Чтобы вернуться в пользовательское меню, нажмите Enter");
-
-            var answerBool = int.TryParse(Console.ReadLine(), out int answer);
-
-            if (!answerBool)
-            {
-                chosenSession = null;
-                return false;
-            }
-            else if (!(answer >= 1 & answer <= sessions.Count))
-            {
-                chosenSession = null;
-                return false;
-            }
-            else
-            {
-                chosenSession = sessions[answer - 1];
-                return true;
-            }
-        }
-
-
-
-        static bool BuyingTicketsOfChosenSession(FilmSession session, int balance, string nameOfBuyer, out List<Place> boughtPlaces, out int newBalance)
-        {
-            boughtPlaces = null;
-            newBalance = balance;
-
-            Console.WriteLine();
-            Console.WriteLine();
-            Console.WriteLine($"Ваш баланс: {balance}");
-            Console.WriteLine();
-            Console.WriteLine();
-
-
-            while (true)
-            {
-                List<Place> requestedPlaces = FormingTheListOfRequestedPlaces(session);
-
-                if (requestedPlaces.Count == 0) { return false; }
-
-                if (requestedPlaces.Sum(place => place.Price) > balance)
-                {
-                    LowFundsNotification();
-
-                    if (!BuyingTicketsAgain()) { return false; }
-
-                    Console.WriteLine();
-                    Console.WriteLine();
-                }
-
-                else
-                {
-                    foreach (var place in requestedPlaces)
-                    {
-                        place.IsBought = true;
-                        place.BoughtAtPrice = place.Price;
-                        place.NameOfBuyer = nameOfBuyer;
-                    }
-
-                    newBalance = balance - requestedPlaces.Sum(place => place.Price);
-                    boughtPlaces = requestedPlaces;
-
-                    TicketsSuccessfullyBoughtNotification();
-
-                    PressAnyKey();
-
-                    return true;
-                }
-            }
-        }
-
-
-        static bool BuyingTicketsAgain()
-        {
-            Console.WriteLine("Нажмите 1, чтобы выбрать билеты еще раз");
-            Console.WriteLine("Чтобы вернуться назад, нажмите любую другую кнопку");
-
-            return Console.ReadKey().Key == ConsoleKey.D1;
-        }
-
-        static void LowFundsNotification()
-        {
-            Console.WriteLine();
-            Console.ForegroundColor = ConsoleColor.Red;
-            Console.WriteLine("На вашем счете недостаточно средств");
-            Console.ResetColor();
-            Console.WriteLine();
-        }
-
-        static void TicketsSuccessfullyBoughtNotification()
-        {
-            Console.WriteLine();
-            Console.ForegroundColor = ConsoleColor.Green;
-            Console.WriteLine("Билеты успешно куплены");
-            Console.ResetColor();
-            Console.WriteLine();
-        }
-
-
-
-        static List<Place> FormingTheListOfRequestedPlaces(FilmSession session)
-        {
-            Console.WriteLine("Введите в строку через пробел номер ряда и места, которые хотите купить, и нажмите Enter");
-            Console.WriteLine("Вы можете ввести так несколько мест подряд в столбик. Когда захотите закончить покупку, нажмите Enter еще раз");
-            Console.WriteLine("Если вы не хотите покупать билеты вообще, просто нажмите Enter");
-
-            Console.WriteLine();
-
-            List<Place> requestedPlaces = new List<Place>();
-
-            while (true)
-            {
-                var request = Console.ReadLine();
-
-                if (request == "") { return requestedPlaces; }
-
-                var requestedPlace = request
-                    .Split()
-                    .Select(int.Parse)
-                    .ToArray();
-
-                var row = requestedPlace[0];
-                var column = requestedPlace[1];
-
-                if (!(row >= 1 & row <= session.Hall.N &
-                    column >= 1 & column <= session.Hall.M))
-                {
-                    ErrorMessage("Такого места нет в зале");
-                }
-
-                else if (session.Places[row - 1][column - 1].IsBought)
-                {
-                    ErrorMessage("К сожалению, это место уже куплено");
-                }
-
-                else if (requestedPlaces.Exists(p => p == session.Places[row - 1][column - 1]))
-                {
-                    ErrorMessage("Вы уже указали это место");
-                }
-
-                else
-                {
-                    requestedPlaces.Add(session.Places[row - 1][column - 1]);
-                }
-            }
-        }
-
-        static void ErrorMessage(string errorMessage)
-        {
-            Console.WriteLine();
-            Console.ForegroundColor = ConsoleColor.Red;
-            Console.WriteLine(errorMessage);
-            Console.ResetColor();
-            Console.WriteLine();
-        }
-
-
-
-
-        static void ShowingBoughtTickets(List<Place> boughtTickets)
-        {
-            if (!boughtTickets.Any())
-            {
-                Console.WriteLine("У вас сейчас нет купленных билетов");
-                Console.WriteLine();
-            }
-
-            else
-            {
-                Console.WriteLine("Список ваших билетов:");
-                Console.WriteLine();
-                Console.WriteLine();
-
-                var filteredFilms = boughtTickets
-                    .Select(tick => tick.Session.Hall.Film)
-                    .Distinct();
-
-                var filteredHalls = boughtTickets
-                    .Select(tick => tick.Session.Hall)
-                    .Distinct();
-
-                var filteredSessions = boughtTickets
-                    .Select(tick => tick.Session)
-                    .Distinct();
-
-
-                foreach (var film in filteredFilms)
-                {
-                    film.PrintFilmInformation();
-
-                    foreach (var hall in film.Halls.Intersect(filteredHalls))
-                    {
-                        hall.PrintHallShortName();
-
-                        foreach (var session in hall.Sessions.Intersect(filteredSessions))
-                        {
-                            session.PrintSession();
-
-                            var ticketsOfSession = boughtTickets
-                                .Where(tick => tick.Session == session);
-
-                            foreach (var ticket in ticketsOfSession)
-                            {
-                                ticket.PrintTicket();
-                            }
-
-                            Console.WriteLine();
-                        }
-
-                        Console.WriteLine();
-                        Console.WriteLine();
-                    }
-
-                    Console.WriteLine();
-                    Console.WriteLine();
-                    Console.WriteLine();
-                }
-            }
-
-            PressAnyKey();
-        }
-
-
-
-        static int IncreasingBalance(int balance)
-        {
-            Console.WriteLine($"Ваш текущий баланс: {balance}");
-            Console.WriteLine();
-            Console.WriteLine();
-
-            Console.WriteLine("Введите сумму, на которую вы хотите пополнить баланс:");
-
-            var newBalance = balance + int.Parse(Console.ReadLine());
-
-            Console.WriteLine();
-            Console.WriteLine("Баланс успешно пополнен!");
-            Console.WriteLine($"Ваш текущий баланс: {newBalance}");
-
-            Console.WriteLine();
-
-            PressAnyKey();
-
-            return newBalance;
-        }
-
-
-
-
         static void AdminInterface()
         {
             if (!CheckingPassword())
