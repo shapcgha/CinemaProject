@@ -8,26 +8,31 @@ namespace CinemaProject_Part2
 {
     internal class Hall
     {
-        public int N { get; set; }
+        internal int N { get; set; }
 
-        public int M { get; set; }
+        internal int M { get; set; }
 
-        public string Name { get; set; }
+        internal string Name { get; set; }
 
-        public Film Film { get; set; }
+        internal Film Film { get; set; }
 
-        public List<FilmSession> Sessions { get; set; }
+        internal List<FilmSession> Sessions { get; set; }
 
-        public int[][] DefaultPrices { get; set; }
+        internal int[][] DefaultPrices { get; set; }
 
 
-        public Hall(string name)
+        internal Hall(string name)
         {
             Name = name;
         }
 
+        internal void SetPrice(int price)
+        {
+            DefaultPrices = Enumerable.Range(0, N).Select(_ => Enumerable.Repeat(price, M).ToArray()).ToArray();
+        }
 
-        public void PrintHallName()
+
+        internal void PrintHallName()
         {
             Console.Write("Зал \"");
 
@@ -46,7 +51,7 @@ namespace CinemaProject_Part2
             Console.WriteLine();
         }
 
-        public void PrintHallShortName()
+        internal void PrintHallShortName()
         {
             Console.Write("Зал \"");
 
