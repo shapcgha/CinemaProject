@@ -1,7 +1,0 @@
-C:\Users\shapc\CinemaProject_Part2\CinemaProject_Part2\bin\Debug\CinemaProject_Part2.exe.config
-C:\Users\shapc\CinemaProject_Part2\CinemaProject_Part2\bin\Debug\CinemaProject_Part2.exe
-C:\Users\shapc\CinemaProject_Part2\CinemaProject_Part2\bin\Debug\CinemaProject_Part2.pdb
-C:\Users\shapc\CinemaProject_Part2\CinemaProject_Part2\obj\Debug\CinemaProject_Part2.csprojAssemblyReference.cache
-C:\Users\shapc\CinemaProject_Part2\CinemaProject_Part2\obj\Debug\CinemaProject_Part2.csproj.CoreCompileInputs.cache
-C:\Users\shapc\CinemaProject_Part2\CinemaProject_Part2\obj\Debug\CinemaProject_Part2.exe
-C:\Users\shapc\CinemaProject_Part2\CinemaProject_Part2\obj\Debug\CinemaProject_Part2.pdb

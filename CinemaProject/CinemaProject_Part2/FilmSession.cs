@@ -12,14 +12,13 @@ namespace CinemaProject_Part2
         const char bought = 'x';
 
 
-        public DateTime Date { get; set; }
+        internal DateTime Date { get; set; }
 
-        public Hall Hall { get; set; }
+        internal Hall Hall { get; set; }
 
-        public Place[][] Places { get; set; }
+        internal Place[][] Places { get; set; }
 
-
-        public FilmSession(string date, Hall hall)
+        internal FilmSession(string date, Hall hall)
         {
             Date = DateTime.Parse(date);
             Hall = hall;
@@ -27,13 +26,13 @@ namespace CinemaProject_Part2
 
 
 
-        public void PrintSession()
+        internal void PrintSession()
         {
             Console.WriteLine(Date.ToString("dd.MM.yyyy HH:mm"));
         }
 
 
-        public void PrintSessionFullInformation()
+        internal void PrintSessionFullInformation()
         {
             Console.WriteLine("Информация о выбранном сеансе:");
             Console.WriteLine();

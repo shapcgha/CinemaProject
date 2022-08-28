@@ -2,7 +2,7 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
-using System.Threading.Tasks;
+using System.IO;
 
 namespace CinemaProject_Part2
 {
@@ -13,10 +13,13 @@ namespace CinemaProject_Part2
         static List<Film> films;
         static List<Hall> allHalls;
         static List<FilmSession> allFilmSessions;
+        static StreamReader reader;
+        static StreamWriter writer;
+        static bool isLoad = false;
 
 
 
-        static void Main(string[] args)
+        static void Main()
         {
             Initializing();
             Console.ReadKey();
@@ -25,22 +28,157 @@ namespace CinemaProject_Part2
 
         static void Initializing()
         {
+            if (File.Exists("cinema.txt"))
+            {
+                reader = new StreamReader("cinema.txt", Encoding.UTF8);
+                isLoad = true;
+            }
             InitializingFilms();
             SettingFilmsHalls();
             GettingHallsAndSessionsLists();
+            GetDrinks();
+            if (isLoad)
+            {
+                reader.Close();
+            }
+            isLoad = false;
 
             MainProgramLoop();
+            OnSave();
+        }
+
+        static void GetDrinks()
+        {
+            Console.WriteLine("Введите количество напитков в баре:");
+            int drinkNumber = ReadNatural();
+            for (int i = 0; i < drinkNumber; i++)
+            {
+                AddingDrink(true);
+            }
+        }
+
+        static void OnSave()
+        {
+            try
+            {
+                writer = new StreamWriter(File.Create("cinema.txt"));
+                SaveFilmList();
+                SaveHallInfo();
+                SaveDrinks();
+                writer.Flush();
+                writer.Close();
+            }
+            catch(Exception e)
+            {
+                Console.WriteLine("Неудалось сохранить файл " + e.Message);
+                writer.Close();
+                File.Delete("cinema.txt");
+            }
+        }
+
+        static void SaveFilmList()
+        {
+            writer.WriteLine(films.Count);
+            foreach (Film film in films)
+            {
+                writer.WriteLine(film.Name);
+            }
+            foreach (Film film in films)
+            {
+                writer.WriteLine(film.Rating);
+            }
+        }
+
+        static void SaveHallInfo()
+        {
+            foreach (Film film in films)
+            {
+                writer.WriteLine(film.Halls.Count);
+                foreach (Hall hall in film.Halls)
+                {
+                    writer.WriteLine(hall.Name);
+                    if (hall is OpenSpaceHall)
+                    {
+                        writer.WriteLine("Yes");
+                    }
+                    else
+                    {
+                        writer.WriteLine("No");
+                    }
+                }
+                foreach (Hall hall in film.Halls)
+                {
+                    writer.WriteLine(hall.N + " " + hall.M);
+                    if (hall is OpenSpaceHall)
+                    {
+                        writer.WriteLine(hall.DefaultPrices[0][0]);
+                    }
+                    else
+                    {
+                        foreach (int[] priceRow in hall.DefaultPrices)
+                        {
+                            for (int i = 0; i < priceRow.Length - 1; i++)
+                            {
+                                writer.Write(priceRow[i] + " ");
+                            }
+                            writer.Write(priceRow[priceRow.Length - 1]);
+                            writer.WriteLine();
+                        }
+                    }
+                    SaveSessions(hall);
+                }
+            }
+        }
+
+        static void SaveSessions(Hall hall)
+        {
+                writer.WriteLine(hall.Sessions.Count);
+                foreach (FilmSession session in hall.Sessions)
+                {
+                    writer.WriteLine(session.Date.ToString("dd.MM.yyyy HH:mm"));
+                }
+                foreach (FilmSession session in hall.Sessions)
+                {
+                    for (int i = 0; i < hall.N; i++)
+                    {
+                        for (int j = 0; j < hall.M; j++)
+                        {
+                            writer.WriteLine(session.Places[i][j].IsBought);
+                            if (session.Places[i][j].IsBought)
+                            {
+                                writer.WriteLine(session.Places[i][j].NameOfBuyer);
+                                writer.WriteLine(session.Places[i][j].BoughtAtPrice);
+                            }
+                        }
+                    }
+                }
+        }
+
+        static void SaveDrinks()
+        {
+            writer.WriteLine(Bar.Drinks.Count);
+            foreach(Drinks drink in Bar.Drinks) 
+            {
+                writer.WriteLine(drink.Name);
+                writer.WriteLine(drink.Price);
+                if (drink is AlcoholDrinks)
+                {
+                    writer.WriteLine("Yes");
+                    writer.WriteLine(drink.Degree);
+                }
+                else
+                {
+                    writer.WriteLine("No");
+                }
+            }
         }
 
 
         static void InitializingFilms()
         {
             Console.WriteLine("Введите количество фильмов:");
-
-            var filmsNumber = int.Parse(Console.ReadLine());
-
+            int filmsNumber = ReadNatural();
             Console.WriteLine();
-
 
             films = new List<Film>();
 
@@ -48,7 +186,16 @@ namespace CinemaProject_Part2
 
             for (int i = 0; i < filmsNumber; i++)
             {
-                films.Add(new Film(Console.ReadLine()));
+                string filmName;
+                if (isLoad)
+                {
+                    filmName = reader.ReadLine();
+                } 
+                else
+                {
+                    filmName = Console.ReadLine();
+                }
+                films.Add(new Film(filmName));
             }
 
             Console.WriteLine();
@@ -58,7 +205,7 @@ namespace CinemaProject_Part2
 
             for (int i = 0; i < filmsNumber; i++)
             {
-                films[i].Rating = Console.ReadLine();
+                films[i].Rating = ReadRating();
             }
 
             Console.WriteLine();
@@ -83,11 +230,9 @@ namespace CinemaProject_Part2
         static List<Hall> InitializingHalls(string filmName = "", bool initial = true)
         {
             Console.WriteLine("Введите количество залов для этого фильма:");
-
-            var hallsNumber = int.Parse(Console.ReadLine());
+            int hallsNumber = ReadNatural();
 
             Console.WriteLine();
-
 
             var halls = new List<Hall>();
 
@@ -103,7 +248,33 @@ namespace CinemaProject_Part2
 
             for (int i = 0; i < hallsNumber; i++)
             {
-                halls.Add(new Hall(Console.ReadLine()));
+                string hallName;
+                if (isLoad)
+                {
+                    hallName = reader.ReadLine();
+                }
+                else
+                {
+                    hallName = Console.ReadLine();
+                }
+                Console.WriteLine("Этот зал открытый? (Yes/No)");
+                string answer;
+                if (isLoad)
+                {
+                    answer = reader.ReadLine();
+                }
+                else
+                {
+                    answer = Console.ReadLine();
+                }
+                if (answer.Equals("Yes"))
+                {
+                    halls.Add(new OpenSpaceHall(hallName));
+                }
+                else
+                {
+                    halls.Add(new Hall(hallName));
+                }
             }
 
             Console.WriteLine();
@@ -134,7 +305,16 @@ namespace CinemaProject_Part2
             hall.M = M;
             hall.N = N;
 
-            hall.DefaultPrices = SettingPrices(hall.N);
+            if (hall is OpenSpaceHall)
+            {
+                Console.WriteLine("Введите дефолтную цену для открытого зала");
+                var price = ReadNatural();
+                hall.DefaultPrices = Enumerable.Range(0, hall.N).Select(_ => Enumerable.Repeat(price, hall.M).ToArray()).ToArray();
+            }
+            else
+            {
+                hall.DefaultPrices = SettingPrices(hall.N);
+            }
             hall.Sessions = SettingHallsSessions(hall);
         }
 
@@ -143,12 +323,10 @@ namespace CinemaProject_Part2
         {
             Console.WriteLine();
             Console.WriteLine($"Введите через пробел размер зала {hallName}:");
+            var sizes = ReadArray(2);
 
-            var sizes = Console.ReadLine().Split();
-
-            N = int.Parse(sizes[0]);
-            M = int.Parse(sizes[1]);
-
+            N = sizes[0];
+            M = sizes[1];
             Console.WriteLine();
         }
 
@@ -161,10 +339,7 @@ namespace CinemaProject_Part2
 
             for (int i = 0; i < N; i++)
             {
-                prices[i] = Console.ReadLine()
-                    .Split()
-                    .Select(int.Parse)
-                    .ToArray();
+                prices[i] = ReadArray(0);
             }
 
             Console.WriteLine();
@@ -176,8 +351,7 @@ namespace CinemaProject_Part2
         static List<FilmSession> SettingHallsSessions(Hall hall)
         {
             Console.WriteLine("Введите количество временных сеансов/слотов для этого зала:");
-
-            var sessionsNumber = int.Parse(Console.ReadLine());
+            var sessionsNumber = ReadNatural();
 
             Console.WriteLine();
 
@@ -188,20 +362,19 @@ namespace CinemaProject_Part2
 
             for (int i = 0; i < sessionsNumber; i++)
             {
-                sessions.Add(new FilmSession(Console.ReadLine(), hall));
+                sessions.Add(new FilmSession(ReadDate(), hall));
             }
 
             Console.WriteLine();
 
+            sessions = sessions
+                .OrderBy(session => session.Date)
+                .ToList();
 
             foreach (var session in sessions)
             {
                 SettingOneHallsSession(hall, session);
             }
-
-            sessions = sessions
-                .OrderBy(session => session.Date)
-                .ToList();
 
             return sessions;
         }
@@ -216,15 +389,27 @@ namespace CinemaProject_Part2
 
                 for (int j = 0; j < hall.M; j++)
                 {
+                    var isBought = false;
+                    string nameOfBuyer = null;
+                    int? boughtAtPrice = null;
+                    if (isLoad)
+                    {
+                        isBought = bool.Parse(reader.ReadLine());
+                        if (isBought)
+                        {
+                            nameOfBuyer = reader.ReadLine();
+                            boughtAtPrice = int.Parse(reader.ReadLine());
+                        }
+                    }
                     session.Places[i][j] = new Place
                     {
                         Row = i + 1,
                         Column = j + 1,
                         Price = hall.DefaultPrices[i][j],
                         Session = session,
-                        IsBought = false,
-                        NameOfBuyer = null,
-                        BoughtAtPrice = null
+                        IsBought = isBought,
+                        NameOfBuyer = nameOfBuyer,
+                        BoughtAtPrice = boughtAtPrice
                     };
                 }
             }
@@ -268,6 +453,115 @@ namespace CinemaProject_Part2
             }
         }
 
+        static int ReadNatural()
+        {
+            uint input;
+            while (true)
+            {
+                try
+                {
+                    if (isLoad)
+                    {
+                        input = uint.Parse(reader.ReadLine());
+                    }
+                    else
+                    {
+                        input = uint.Parse(Console.ReadLine());
+                    }
+                    break;
+                }
+                catch
+                {
+                    Console.WriteLine("Требуется натуральное число");
+                }
+            }
+            return (int) input;
+        }
+
+        static string ReadRating()
+        {
+            string rating;
+            while (true)
+            {
+                if (isLoad)
+                {
+                    rating = reader.ReadLine();
+                }
+                else
+                {
+                    rating = Console.ReadLine();
+                }
+                if (rating.Equals("0+") || rating.Equals("6+") ||
+                    rating.Equals("12+") || rating.Equals("18+") || rating.Equals("16+")) break;
+                else Console.WriteLine("Введите корректный возрастной рейтинг(0+, 6+, 12+, 16+, 18+)");
+            }
+            return rating;
+        }
+
+        static string ReadDate()
+        {
+            string data;
+            while (true)
+            {
+                try
+                {
+                    if (isLoad)
+                    {
+                        data = reader.ReadLine();
+                    }
+                    else
+                    {
+                        data = Console.ReadLine();
+                    }
+                    DateTime.Parse(data);
+                    break;
+                }
+                catch
+                {
+                    Console.WriteLine("Введите коректное дата и время сеанса");
+                }
+            }
+            return data;
+        }
+
+        static int[] ReadArray(int size)
+        {
+            int[] arr;
+            while (true)
+            {
+                try
+                {
+                    string arrString;
+                    if (isLoad)
+                    {
+                        arrString = reader.ReadLine();
+                    }
+                    else
+                    {
+                        arrString = Console.ReadLine();
+                    }
+                   arr = arrString
+                        .Split()
+                        .Select(int.Parse)
+                        .ToArray();
+                    if (size == 0)
+                    {
+                        break;
+                    }
+                    if (arr.Length != size)
+                    {
+                        continue;
+                    }
+                    break;
+                }
+                catch
+                {
+                    Console.WriteLine($"Вводите {size} натуральных числел разделенных пробелами");
+                }
+            }
+            return arr;
+        }
+
 
         static bool? ChoosingInterface()
         {
@@ -295,8 +589,6 @@ namespace CinemaProject_Part2
             }
         }
 
-
-
         static void UserInterface()
         {
             Console.Clear();
@@ -317,6 +609,7 @@ namespace CinemaProject_Part2
                 Console.WriteLine("Нажмите 2 для покупки билетов");
                 Console.WriteLine("Нажмите 3 для просмотра купленных вами билетов");
                 Console.WriteLine("Нажмите 4 для того, чтобы пополнить баланс");
+                Console.WriteLine("НАжмите 5 для того чтобы купить напиток в баре");
                 Console.WriteLine("Нажмите любую другую кнопку для завершения пользовательского сеанса");
 
                 var key = Console.ReadKey().Key;
@@ -352,6 +645,11 @@ namespace CinemaProject_Part2
                 else if (key == ConsoleKey.D4)
                 {
                     balance = IncreasingBalance(balance);
+                } 
+
+                else if (key == ConsoleKey.D5)
+                {
+                    balance =  BuyDrink(balance);
                 }
 
                 else
@@ -361,12 +659,19 @@ namespace CinemaProject_Part2
             }
         }
 
+        static int BuyDrink(int balance)
+        {
+            balance -= Bar.BuyDrink(balance);
+            PressAnyKey();
+            return balance;
+        }
+
 
         static int GetUserBalance()
         {
             Console.WriteLine("Укажите текущий баланс счета:");
-
-            var answer = int.Parse(Console.ReadLine());
+ 
+            var answer = ReadNatural();
 
             Console.WriteLine();
 
@@ -486,7 +791,7 @@ namespace CinemaProject_Part2
             }
 
             return filteredSessions.ToList();
-        }        
+        }
 
 
 
@@ -525,7 +830,7 @@ namespace CinemaProject_Part2
                     .Distinct()
                     .ToList();
             }
-            
+
 
             foreach (var film in filteredFilms)
             {
@@ -697,11 +1002,18 @@ namespace CinemaProject_Part2
                 var request = Console.ReadLine();
 
                 if (request == "") { return requestedPlaces; }
-
-                var requestedPlace = request
-                    .Split()
-                    .Select(int.Parse)
-                    .ToArray();
+                int[] requestedPlace;
+                try
+                {
+                    requestedPlace = request
+                        .Split()
+                        .Select(int.Parse)
+                        .ToArray();
+                }
+                catch
+                {
+                    return requestedPlaces;
+                }
 
                 var row = requestedPlace[0];
                 var column = requestedPlace[1];
@@ -814,7 +1126,7 @@ namespace CinemaProject_Part2
 
             Console.WriteLine("Введите сумму, на которую вы хотите пополнить баланс:");
 
-            var newBalance = balance + int.Parse(Console.ReadLine());
+            var newBalance = balance + ReadNatural();
 
             Console.WriteLine();
             Console.WriteLine("Баланс успешно пополнен!");
@@ -827,9 +1139,7 @@ namespace CinemaProject_Part2
             return newBalance;
         }
 
-
-
-
+        
         static void AdminInterface()
         {
             if (!CheckingPassword())
@@ -852,6 +1162,7 @@ namespace CinemaProject_Part2
                     Console.WriteLine("Нажмите 1 для редактирования информации о фильмах/залах/сеансах");
                     Console.WriteLine("Нажмите 2 для просмотра аналитики по продажам");
                     Console.WriteLine("Нажмите 3 для просмотра клиентской аналитики");
+                    Console.WriteLine("Нажмите 4 для редактирования информации о баре");
                     Console.WriteLine("Нажмите любую другую кнопку для завершения сеанса администратора");
 
                     var key = Console.ReadKey().Key;
@@ -873,11 +1184,137 @@ namespace CinemaProject_Part2
                         ClientsAnalytics();
                     }
 
+                    else if (key == ConsoleKey.D4)
+                    {
+                        EditBarMenu();
+                    }
+
                     else
                     {
                         break;
                     }
                 }
+            }
+        }
+
+        static void EditBarMenu()
+        {
+            Console.WriteLine("Нажмите 1 для добавления нового напитка");
+            Console.WriteLine("Нажмите 2 для удаления какого-либо напитка");
+
+            var key = Console.ReadKey().Key;
+
+            Console.Clear();
+
+            if (key == ConsoleKey.D1)
+            {
+                AddingDrink(false);
+            }
+
+            else if (key == ConsoleKey.D2)
+            {
+                DeletingDrink();
+            }
+        }
+
+        static void AddingDrink(bool initial)
+        {
+            Console.WriteLine("Добавление напитка");
+            Console.WriteLine();
+
+
+            Console.WriteLine("Введите название напитка:");
+
+            string name;
+            if (isLoad)
+            {
+                name = reader.ReadLine();
+            }
+            else
+            {
+                name = Console.ReadLine();
+            }
+
+            Console.WriteLine();
+
+            Console.WriteLine("Введите цену напитка:");
+
+            var price = ReadNatural();
+
+            Console.WriteLine();
+
+            Console.WriteLine("Новый напиток алкогольный? (Yes/No)");
+
+            while (true)
+            {
+                string answer;
+                if (isLoad)
+                {
+                    answer = reader.ReadLine();
+                }
+                else
+                {
+                    answer = Console.ReadLine();
+                }
+                if (answer.Equals("Yes"))
+                {
+                    Console.WriteLine("Введите градус напинтка");
+                    var degree = ReadNatural();
+                    Bar.AddNewDrink(name, price, true, degree);
+                    break;
+                } 
+                else if (answer.Equals("No"))
+                {
+                    Bar.AddNewDrink(name, price, false, 0);
+                    break;
+                } 
+                else
+                {
+                    Console.WriteLine("Требуется ввести ответ \"Yes\" или \"No\"");
+                }
+            }
+
+            Console.WriteLine();
+            Console.WriteLine();
+            if (!initial)
+            {
+                Console.WriteLine("Напиток успешно добавлен!");
+                Console.WriteLine();
+
+                PressAnyKey();
+            }
+        }
+
+        static void DeletingDrink()
+        {
+            Console.WriteLine("Удаление напитка");
+            Console.WriteLine();
+
+
+            Console.WriteLine("Введите название напитка, который вы бы хотели удалить");
+
+            var name = Console.ReadLine();
+            var drink = Bar.Drinks.FirstOrDefault(f => f.Name == name);
+
+            Console.WriteLine();
+
+            if (drink == null)
+            {
+                Console.WriteLine("К сожалению, такого напитка нет в базе");
+
+                Console.WriteLine();
+                Console.WriteLine();
+
+                PressAnyKey();
+            }
+            else
+            {
+                Bar.Drinks.Remove(drink);
+
+                Console.WriteLine("Напиток успешно удален!");
+                Console.WriteLine();
+
+                PressAnyKey();
             }
         }
 
@@ -891,8 +1328,6 @@ namespace CinemaProject_Part2
 
             return pass == password;
         }
-
-
 
         static void AdminEditingMenu()
         {
@@ -941,7 +1376,7 @@ namespace CinemaProject_Part2
 
             Console.WriteLine("Введите возрастной рейтинг для этого фильма:");
 
-            film.Rating = Console.ReadLine();
+            film.Rating = ReadRating();
 
             Console.WriteLine();
             Console.WriteLine();
@@ -1036,7 +1471,7 @@ namespace CinemaProject_Part2
                 {
                     Console.WriteLine("Укажите новый возрастной рейтинг для фильма");
 
-                    film.Rating = Console.ReadLine();
+                    film.Rating = ReadRating();
 
                     Console.WriteLine();
                     Console.WriteLine("Возрастной рейтинг успешно изменен!");
@@ -1203,8 +1638,15 @@ namespace CinemaProject_Part2
                 }
                 else
                 {
-                    hall.DefaultPrices = SettingPrices(hall.N, "новые", "сеансов данного зала");
-
+                    if (hall is OpenSpaceHall)
+                    {
+                        Console.WriteLine("Введите новую дефолтную цену для открытого зала");
+                        hall.DefaultPrices = Enumerable.Range(0, hall.N).Select(_ => Enumerable.Repeat(ReadNatural(), hall.M).ToArray()).ToArray();
+                    }
+                    else
+                    {
+                        hall.DefaultPrices = SettingPrices(hall.N, "новые", "сеансов данного зала");
+                    }
                     SwitchingSessionsPricesToNewDefault(hall);
 
                     Console.WriteLine();
@@ -1281,7 +1723,7 @@ namespace CinemaProject_Part2
         {
             Console.WriteLine("Введите дату и время сеанса в аналогичном формате: 05.02.2022 18:35");
 
-            var session = new FilmSession(Console.ReadLine(), hall);
+            var session = new FilmSession(ReadDate(), hall);
 
             Console.WriteLine();
 
@@ -1303,8 +1745,20 @@ namespace CinemaProject_Part2
             PrintSessions(hall);
 
             Console.WriteLine("Укажите номер сеанса, информацию по которому вы бы хотели отредактировать");
-
-            var session = hall.Sessions[int.Parse(Console.ReadLine()) - 1];
+            var number = 0;
+            while (true)
+            {
+                number = ReadNatural() - 1;
+                if (number >= 0 && number < hall.Sessions.Count)
+                {
+                    break;
+                } 
+                else
+                {
+                    Console.WriteLine($"Введите коректный номер сеанса от 1 до {hall.Sessions.Count}");
+                }
+            }
+            var session = hall.Sessions[number - 1];
 
             if (session.Date < DateTime.Now)
             {
@@ -1368,7 +1822,7 @@ namespace CinemaProject_Part2
                 {
                     Console.WriteLine("Укажите новую дату и время сеанса в аналогичном формате: 05.02.2022 18:35");
 
-                    var date = DateTime.Parse(Console.ReadLine());
+                    var date = DateTime.Parse(ReadDate());
 
                     if (date < DateTime.Now)
                     {
@@ -1399,8 +1853,16 @@ namespace CinemaProject_Part2
                 }
                 else
                 {
-                    var prices = SettingPrices(session.Hall.N, "новые", "данного сеанса");
-
+                    int[][] prices;
+                    if (session.Hall is OpenSpaceHall)
+                    {
+                        Console.WriteLine("Введите дефолтную цену для данного сеанса");
+                        prices = Enumerable.Range(0, session.Hall.N).Select(_ => Enumerable.Repeat(ReadNatural(), session.Hall.M).ToArray()).ToArray();
+                    }
+                    else
+                    {
+                        prices = SettingPrices(session.Hall.N, "новые", "данного сеанса");
+                    }
                     SwitchingSessionPrices(session, prices);
 
                     Console.WriteLine();
@@ -1415,10 +1877,7 @@ namespace CinemaProject_Part2
             {
                 Console.WriteLine("Введите в строку через пробел номер ряда и места, цену которого хотите изменить");
 
-                var place = Console.ReadLine()
-                    .Split()
-                    .Select(int.Parse)
-                    .ToArray();
+                var place = ReadArray(2);
 
                 var row = place[0];
                 var column = place[1];
@@ -1446,7 +1905,7 @@ namespace CinemaProject_Part2
                 {
                     Console.WriteLine("Укажите новую цену для данного места:");
 
-                    session.Places[row - 1][column - 1].Price = int.Parse(Console.ReadLine());
+                    session.Places[row - 1][column - 1].Price = ReadNatural();
 
                     Console.WriteLine();
                     Console.WriteLine("Цена успешно изменена!");
@@ -1549,7 +2008,20 @@ namespace CinemaProject_Part2
 
             Console.WriteLine("Укажите номер сеанса, который вы бы хотели удалить");
 
-            var session = hall.Sessions[int.Parse(Console.ReadLine()) - 1];
+            var number = 0;
+            while (true)
+            {
+                number = ReadNatural() - 1;
+                if (number >= 0 && number < hall.Sessions.Count)
+                {
+                    break;
+                }
+                else
+                {
+                    Console.WriteLine($"Введите коректный номер сеанса от 1 до {hall.Sessions.Count}");
+                }
+            }
+            var session = hall.Sessions[number - 1];
 
             Console.WriteLine();
 
@@ -1622,11 +2094,23 @@ namespace CinemaProject_Part2
 
             else
             {
-                var filtersNumbers = answer
-                    .Split()
-                    .Select(int.Parse)
-                    .ToArray();
-
+                int[] filtersNumbers;
+                while (true)
+                {
+                    try
+                    {
+                        filtersNumbers = answer
+                            .Split()
+                            .Select(int.Parse)
+                            .ToArray();
+                        break;
+                    }
+                    catch
+                    {
+                        Console.WriteLine("Вводите натуральные числа разделенные пробелами");
+                        answer = Console.ReadLine();
+                    }
+                }
                 var filteredSessions = FilteredSessionsByAdmin(filtersNumbers);
 
                 Console.Clear();
@@ -1870,18 +2354,32 @@ namespace CinemaProject_Part2
             Console.WriteLine(thirdLine);
 
             var answerFirstLine = Console.ReadLine();
+            int[] answerBegining;
+            int[] answerEnding;
 
             if (answerFirstLine != "")
             {
-                var answerBegining = answerFirstLine
-                    .Split(':')
-                    .Select(int.Parse)
-                    .ToArray();
+                while (true)
+                {
+                    try
+                    {
+                        answerBegining = answerFirstLine
+                            .Split(':')
+                            .Select(int.Parse)
+                            .ToArray();
 
-                var answerEnding = Console.ReadLine()
-                    .Split(':')
-                    .Select(int.Parse)
-                    .ToArray();
+                        answerEnding = Console.ReadLine()
+                            .Split(':')
+                            .Select(int.Parse)
+                            .ToArray();
+                        break;
+                    }
+                    catch
+                    {
+                        Console.WriteLine("Вводите натуральные числа разделенные :");
+                        answerFirstLine = Console.ReadLine();
+                    }
+                }
 
                 TimeSpan beginingTime = new TimeSpan(answerBegining[0], answerBegining[1], 0);
                 TimeSpan endingTime = new TimeSpan(answerEnding[0], answerEnding[1], 0);
@@ -1924,7 +2422,7 @@ namespace CinemaProject_Part2
             Console.WriteLine(secondLine);
             Console.WriteLine(thirdLine);
 
-            var answer = Console.ReadLine();
+            var answer = ReadRating();
 
             if (answer != "")
             {
@@ -2068,7 +2566,7 @@ namespace CinemaProject_Part2
 
             Console.WriteLine("Укажите число наиболее лояльных клиентов (по нескольким параметрам), которое бы вы хотели отобразить в аналитике (Топ-N):");
 
-            var number = int.Parse(Console.ReadLine());
+            var number = ReadNatural();
 
             Console.WriteLine();
             Console.WriteLine();

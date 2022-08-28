@@ -8,20 +8,20 @@ namespace CinemaProject_Part2
 {
     internal class Film
     {
-        public string Name { get; set; }
+        internal string Name { get; set; }
 
-        public string Rating { get; set; }
+        internal string Rating { get; set; }
 
-        public List<Hall> Halls { get; set; }
+        internal List<Hall> Halls { get; set; }
 
 
-        public Film(string name)
+        internal Film(string name)
         {
             Name = name;
         }
 
 
-        public void PrintFilmInformation()
+        internal void PrintFilmInformation()
         {
             Console.Write("\"");
 
@@ -38,7 +38,7 @@ namespace CinemaProject_Part2
             Console.WriteLine();
         }
 
-        public void PrintFilmName()
+        internal void PrintFilmName()
         {
             Console.ForegroundColor = ConsoleColor.DarkGreen;
             Console.WriteLine(Name);
